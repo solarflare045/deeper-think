@@ -1,49 +1,29 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { Observable, Observer, Subscription } from 'rxjs/Rx';
 import { AngularFire } from 'angularfire2';
 import * as _ from 'lodash';
 
-export declare interface Voice {
-  lang: string;
-}
-
-export declare class SpeechSynthesisUtterance {
-  voice: Voice;
-  text: string;
-  pitch: number;
-  rate: number;
-}
-
-export declare var speechSynthesis: {
-  cancel(): void;
-  getVoices(): Voice[];
-  speak(utterance: SpeechSynthesisUtterance): void;
-};
+import { MusicService } from '../services/music';
+import { SpeechService } from '../services/speech';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent {
+export class AppComponent implements OnDestroy {
   phrase$: Observable<string>;
+  musicSub: Subscription;
 
-  constructor(private af: AngularFire) {
-    this.phrase$ = this.af.database.object('/phrase')
+  constructor(private af: AngularFire, private music: MusicService, private speech: SpeechService) {
+    this.phrase$ = this.af.database.object('/phrase' /** TODO **/)
       .map((ref) => ref.$value)
-      .switchMap((phrase) => this.speak$(phrase).startWith(phrase));
+      .switchMap((phrase) => this.speech.speak$(phrase).startWith(phrase));
+
+    this.musicSub = this.music.play$().subscribe();
   }
 
-  speak$(phrase: string): Observable<any> {
-    return Observable.create((observer: Observer<any>) => {
-      const msg = new SpeechSynthesisUtterance();
-      msg.voice = _.sample(_.filter(speechSynthesis.getVoices(), (voice) => _.startsWith(voice.lang, 'en-')));
-      msg.text = phrase;
-      msg.pitch = _.random(0.5, 1.2, true);
-      msg.rate = _.random(0.6, 0.7, true);
-      speechSynthesis.speak(msg);
-
-      return () => speechSynthesis.cancel();
-    }).do({ error: (err) => console.error('Speak Error', err) });
+  ngOnDestroy(): void {
+    this.musicSub.unsubscribe();
   }
 }
