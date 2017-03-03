@@ -2,7 +2,23 @@ import { Component } from '@angular/core';
 import { Observable, Observer, Subscription } from 'rxjs/Rx';
 import { AngularFire } from 'angularfire2';
 import * as _ from 'lodash';
-import { Voice, speechSynthesis, SpeechSynthesisUtterance } from '../types/types';
+
+export declare interface Voice {
+  lang: string;
+}
+
+export declare class SpeechSynthesisUtterance {
+  voice: Voice;
+  text: string;
+  pitch: number;
+  rate: number;
+}
+
+export declare var speechSynthesis: {
+  cancel(): void;
+  getVoices(): Voice[];
+  speak(utterance: SpeechSynthesisUtterance): void;
+};
 
 @Component({
   selector: 'app-root',
@@ -28,6 +44,6 @@ export class AppComponent {
       speechSynthesis.speak(msg);
 
       return () => speechSynthesis.cancel();
-    });
+    }).do({ error: (err) => console.error('Speak Error', err) });
   }
 }
